@@ -18,7 +18,6 @@ Welcome!
 with st.spinner("Loading data..."):
     df_combined = finalize_data()
 
-
 ####################################FILTER#################
 st.sidebar.write(" Use the filters below to explore the data.")
 
@@ -113,63 +112,42 @@ with col9:
     total_duration_hours = total_duration_sec / 3600  # Convert seconds to hours
     st.metric("Total Duration (hours)", f"{total_duration_hours:,.2f}")
 
-
 st.divider()
 
 ##### TRENDLINE
-# Trend of Sisa Saldo by Week/Month
-if 'enroll_date' in filtered_df.columns and 'sisa_saldo' in filtered_df.columns:
+# Trend of Jumlah Penggunaan by Week
+if 'enroll_date' in filtered_df.columns and 'price' in filtered_df.columns:
+    # Ensure enroll_date is datetime
     filtered_df['enroll_date'] = pd.to_datetime(filtered_df['enroll_date'], errors='coerce')
-    
-    # Allow the user to choose between Weekly or Monthly trends
-    trend_interval = st.selectbox(
-        "Select Trend Interval",
-        options=["Weekly", "Monthly"],
-        index=0
+
+    # Group data by week and sum the 'price' column
+    trend_data = (
+        filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('W'))['price']
+        .sum()
+        .reset_index()
+        .rename(columns={'enroll_date': 'Week', 'price': 'Total Jumlah Penggunaan'})
     )
-
-    # Group by the selected interval
-    if trend_interval == "Weekly":
-        trend_data = (
-            filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('W'))['sisa_saldo']
-            .sum()
-            .reset_index()
-            .rename(columns={'enroll_date': 'Week', 'sisa_saldo': 'Total Sisa Saldo'})
-        )
-        trend_data['Week'] = trend_data['Week'].astype(str)  # Convert period to string for display
-
-    elif trend_interval == "Monthly":
-        trend_data = (
-            filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('M'))['sisa_saldo']
-            .sum()
-            .reset_index()
-            .rename(columns={'enroll_date': 'Month', 'sisa_saldo': 'Total Sisa Saldo'})
-        )
-        trend_data['Month'] = trend_data['Month'].astype(str)  # Convert period to string for display
-
-    # Create a Plotly line chart
-    st.write(f"Trend of Sisa Saldo ({trend_interval})")
+    trend_data['Week'] = trend_data['Week'].astype(str)  # Convert period to string for display
     fig = px.line(
         trend_data,
-        x=trend_data.columns[0],  # X-axis: Week or Month
-        y='Total Sisa Saldo',  # Y-axis: Total Sisa Saldo
-        title=f"Trend of Sisa Saldo ({trend_interval})",
+        x='Week',  # X-axis: Week
+        y='Total Jumlah Penggunaan',  # Y-axis: Total Jumlah Penggunaan
+        title="Trend of Jumlah Penggunaan (Weekly)",
         markers=True,
-        labels={trend_data.columns[0]: trend_interval, 'Total Sisa Saldo': 'Total Sisa Saldo (IDR)'}
+        labels={'Week': 'Week (YYYY-MM-W)', 'Total Jumlah Penggunaan': 'Total Jumlah Penggunaan (IDR)'}
     )
-    fig.update_traces(line=dict(color='royalblue', width=2), marker=dict(size=8))
+    fig.update_traces(line=dict(color='green', width=2), marker=dict(size=8))
     fig.update_layout(
-        xaxis_title=trend_interval,
-        yaxis_title="Total Sisa Saldo (IDR)",
+        xaxis_title="Week (YYYY-MM-W)",
+        yaxis_title="Total Jumlah Penggunaan (IDR)",
         hovermode="x unified",
         template="plotly_white",
-        width=900,
+        width=1200,
         height=500,
     )
     
     # Display the chart
     st.plotly_chart(fig)
-
 
 ###### TOP 10
 # Top 10 'title' by count of unique emails (horizontal bars)

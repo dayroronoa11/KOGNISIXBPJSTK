@@ -1,16 +1,17 @@
 SELECT 
-    t.serial,
-    t.created_at AS transaction_created_at, 
-    u.full_name,
-    u.phone_number,
-    u.email, 
-    c.title,
+    t.serial as no_transaksi,
+    t.created_at AS enroll_date, 
+    u.full_name as nama,
+    u.phone_number as phone_number,
+    u.email as email,
+    c.title as title,
     cat.name AS category_name,
-    v.code, 
-    c.price_normal,
-    MIN(cup.created_at) AS progress_created_at, 
-    MAX(cup.updated_at) AS progress_updated_at,
-    MAX(cup.progress_percentage) AS progress,
+    v.code as voucher, 
+    c.price_normal as price,
+    MIN(cup.created_at) AS created_at, 
+    MAX(cup.updated_at) AS updated_at,
+    AVG(cup.progress_percentage) AS progress,
+    SUM(cup.progress_duration) as duration,
     cq.total_correct_answers
 FROM 
     transactions t

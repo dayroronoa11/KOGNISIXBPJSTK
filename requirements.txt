@@ -1,0 +1,12 @@
+streamlit==1.38.0
+pandas
+altair
+pymysql
+sshtunnel
+gspread
+oauth2client
+paramiko
+datetime
+toml
+numpy
+plotly

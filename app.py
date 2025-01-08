@@ -178,7 +178,7 @@ if 'title' in filtered_df.columns and 'email' in filtered_df.columns:
     )
     st.plotly_chart(fig_titles)
 
-col2, col3, col4 = st.columns(3)
+col2, col3 = st.columns(2)
 with col2:
     # Top 10 'category_name' by count of unique emails (vertical bars)
     if 'category_name' in filtered_df.columns and 'email' in filtered_df.columns:
@@ -251,7 +251,23 @@ with col3:
         st.write("**Top Wilayah**")
         st.dataframe(top_wilayah)
 
+
+col4, col5 = st.columns(2)
 with col4:
+    if 'title' in filtered_df.columns and 'price' in filtered_df.columns:
+        # Group by title and calculate the total price (Jumlah Penggunaan) for each title
+        title_usage_data = (
+            filtered_df.groupby('title')['price']
+            .sum()
+            .reset_index()
+            .rename(columns={'price': 'Jumlah Penggunaan'})
+            .sort_values(by='Jumlah Penggunaan', ascending=False)
+        )
+
+        # Display the data in a table
+        st.write("**Jumlah Penggunaan per Title**")
+        st.dataframe(title_usage_data)
+with col5:
     # Top 10 users by count of titles
     if 'title' in filtered_df.columns and 'nama' in filtered_df.columns:
         # Count title enrollment (count of titles grouped by nama)
@@ -285,14 +301,7 @@ with col4:
         st.write("**Top 10 Users by 100% Progress**")
         st.dataframe(top_users)
 
-
-
-
-
-
-
-
-
+    
 
 
 

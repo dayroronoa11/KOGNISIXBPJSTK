@@ -23,11 +23,14 @@ def fetch_combined():
     df_id = df_id.drop_duplicates(subset='email')
     df_bpjs = df_bpjs.drop_duplicates(subset='email')
 
+    # Filter out emails ending with '@growthcenter.id'
+    df_id = df_id[~df_id['email'].str.endswith('@growthcenter.id', na=False)]
+    df_bpjs = df_bpjs[~df_bpjs['email'].str.endswith('@growthcenter.id', na=False)]
+
     # Merge the datasets on email
     df_combined = pd.merge(df_id, df_bpjs, on='email', how='outer', suffixes=('_id', '_bpjs'))
 
     return df_combined
-
 
 def finalize_data():
     df_combined = fetch_combined()
@@ -35,5 +38,4 @@ def finalize_data():
         return df_combined
     else:
         st.error("Failed to fetch combined data due to missing columns.")
-        return pd.DataFrame()  
-
+        return pd.DataFrame()

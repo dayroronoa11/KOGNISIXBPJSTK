@@ -128,15 +128,27 @@ if 'enroll_date' in filtered_df.columns and 'price' in filtered_df.columns:
         .rename(columns={'enroll_date': 'Week', 'price': 'Total Jumlah Penggunaan'})
     )
     trend_data['Week'] = trend_data['Week'].astype(str)  # Convert period to string for display
+    def format_price(value):
+        if value >= 1_000_000:
+            return f"{value / 1_000_000:.1f} juta"
+        elif value >= 1_000:
+            return f"{value / 1_000:.1f} ribu"
+        else:
+            return f"{value:.0f}"
+
+    trend_data['Formatted Jumlah Penggunaan'] = trend_data['Total Jumlah Penggunaan'].apply(format_price)
+
     fig = px.line(
         trend_data,
         x='Week',  # X-axis: Week
         y='Total Jumlah Penggunaan',  # Y-axis: Total Jumlah Penggunaan
         title="Trend of Jumlah Penggunaan (Weekly)",
         markers=True,
-        labels={'Week': 'Week (YYYY-MM-W)', 'Total Jumlah Penggunaan': 'Total Jumlah Penggunaan (IDR)'}
+        labels={'Week': 'Week (YYYY-MM-W)', 'Total Jumlah Penggunaan': 'Total Jumlah Penggunaan (IDR)'},
+        text='Formatted Jumlah Penggunaan',
+        hover_data={'Total Jumlah Penggunaan': True, 'Formatted Jumlah Penggunaan': True},
     )
-    fig.update_traces(line=dict(color='green', width=2), marker=dict(size=8))
+    fig.update_traces(line=dict(color='green', width=2), marker=dict(size=8), textposition='top center' )
     fig.update_layout(
         xaxis_title="Week (YYYY-MM-W)",
         yaxis_title="Total Jumlah Penggunaan (IDR)",
@@ -174,7 +186,7 @@ if 'title' in filtered_df.columns and 'email' in filtered_df.columns:
     fig_titles.update_traces(texttemplate='%{text}', textposition='outside')
     fig_titles.update_layout(
         height=600,
-        yaxis=dict(tickmode='linear'), 
+        yaxis=dict(categoryorder='total ascending'), 
     )
     st.plotly_chart(fig_titles)
 
@@ -254,19 +266,24 @@ with col3:
 
 col4, col5 = st.columns(2)
 with col4:
-    if 'title' in filtered_df.columns and 'price' in filtered_df.columns:
-        # Group by title and calculate the total price (Jumlah Penggunaan) for each title
+    if 'title' in filtered_df.columns and 'price' in filtered_df.columns and 'email' in filtered_df.columns:
+        # Group by title and calculate the metrics
         title_usage_data = (
-            filtered_df.groupby('title')['price']
-            .sum()
+            filtered_df.groupby('title')
+            .agg(
+                enrollment=('email', pd.Series.nunique),  # Count distinct emails
+                price=('price', 'mean'),  # Average price
+                total_price=('price', 'sum')  # Total price (Jumlah Penggunaan)
+            )
             .reset_index()
-            .rename(columns={'price': 'Jumlah Penggunaan'})
-            .sort_values(by='Jumlah Penggunaan', ascending=False)
+            .rename(columns={'enrollment': 'Enrollment', 'price': 'Price', 'total_price': 'Total Price'})
+            .sort_values(by='Total Price', ascending=False)
         )
 
         # Display the data in a table
-        st.write("**Jumlah Penggunaan per Title**")
+        st.write("**Jumlah nilai transaksi per Title**")
         st.dataframe(title_usage_data)
+
 with col5:
     # Top 10 users by count of titles
     if 'title' in filtered_df.columns and 'nama' in filtered_df.columns:

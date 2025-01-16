@@ -323,6 +323,8 @@ with col4:
             .sort_values(by='Total Price', ascending=False)
         )
 
+        title_usage_data.index = title_usage_data.index + 1
+
         # Display the data in a table
         st.write("**Jumlah nilai transaksi per Title**")
         st.dataframe(title_usage_data)

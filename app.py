@@ -7,6 +7,7 @@ import os
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 import textwrap
+import streamlit_authenticator as stauth
 
 #####################################PAGE#################
 st.set_page_config(layout="wide")
@@ -15,8 +16,8 @@ st.markdown("""
 Welcome!
 """)
 
-with st.spinner("Loading data..."):
-    df_combined = finalize_data()
+df_combined = finalize_data()
+
 
 ####################################FILTER#################
 st.sidebar.write(" Use the filters below to explore the data.")
@@ -73,7 +74,7 @@ with st.expander("View Filtered Data"):
 
 #######################################VISUAL#################
 col3, col4, col5, col8, col9 = st.columns(5)
-col6, col7 = st.columns(2)
+col10, col6, col7 = st.columns(3)
 
 # Column 3: Count distinct emails as 'Jumlah User'
 with col3:
@@ -97,7 +98,7 @@ with col6:
 
 # Column 7: Remaining balance as 'Sisa Saldo'
 with col7:
-    initial_balance = 94575000
+    initial_balance = 94572100
     sisa_saldo = initial_balance - jumlah_penggunaan
     st.metric("Sisa Saldo", f"Rp {sisa_saldo:,.0f}")
 
@@ -112,22 +113,44 @@ with col9:
     total_duration_hours = total_duration_sec / 3600  # Convert seconds to hours
     st.metric("Total Duration (hours)", f"{total_duration_hours:,.2f}")
 
+# Column 10: Count vouchers that have been redeemed as 'Jumlah Voucher Redeemed'
+with col10:
+    jumlah_voucher_redeemed = filtered_df['voucher'].count()
+    st.metric("Jumlah Voucher Redeemed", jumlah_voucher_redeemed)
+
 st.divider()
 
 ##### TRENDLINE
-# Trend of Jumlah Penggunaan by Week
+# Ensure 'enroll_date' is datetime
 if 'enroll_date' in filtered_df.columns and 'price' in filtered_df.columns:
-    # Ensure enroll_date is datetime
     filtered_df['enroll_date'] = pd.to_datetime(filtered_df['enroll_date'], errors='coerce')
-
-    # Group data by week and sum the 'price' column
-    trend_data = (
-        filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('W'))['price']
-        .sum()
-        .reset_index()
-        .rename(columns={'enroll_date': 'Week', 'price': 'Total Jumlah Penggunaan'})
-    )
-    trend_data['Week'] = trend_data['Week'].astype(str)  # Convert period to string for display
+    
+    # Select box for Weekly or Monthly trend
+    trend_type = st.selectbox("Select Trend Type", options=['Weekly', 'Monthly'], index=0)
+    
+    # Group by Week or Month based on selection
+    if trend_type == 'Weekly':
+        trend_data = (
+            filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('W'))['price']
+            .sum()
+            .reset_index()
+            .rename(columns={'enroll_date': 'Period', 'price': 'Total Jumlah Penggunaan'})
+        )
+        trend_data['Period'] = trend_data['Period'].astype(str)  # Convert to string for display
+        title = "Trend of Jumlah Penggunaan (Weekly)"
+        x_label = "Week (YYYY-MM-W)"
+    else:  # Monthly trend
+        trend_data = (
+            filtered_df.groupby(filtered_df['enroll_date'].dt.to_period('M'))['price']
+            .sum()
+            .reset_index()
+            .rename(columns={'enroll_date': 'Period', 'price': 'Total Jumlah Penggunaan'})
+        )
+        trend_data['Period'] = trend_data['Period'].astype(str)  # Convert to string for display
+        title = "Trend of Jumlah Penggunaan (Monthly)"
+        x_label = "Month (YYYY-MM)"
+    
+    # Format 'Total Jumlah Penggunaan' for display
     def format_price(value):
         if value >= 1_000_000:
             return f"{value / 1_000_000:.1f} juta"
@@ -137,20 +160,25 @@ if 'enroll_date' in filtered_df.columns and 'price' in filtered_df.columns:
             return f"{value:.0f}"
 
     trend_data['Formatted Jumlah Penggunaan'] = trend_data['Total Jumlah Penggunaan'].apply(format_price)
-
+    
+    # Create the trendline chart
     fig = px.line(
         trend_data,
-        x='Week',  # X-axis: Week
+        x='Period',  # X-axis: Week or Month
         y='Total Jumlah Penggunaan',  # Y-axis: Total Jumlah Penggunaan
-        title="Trend of Jumlah Penggunaan (Weekly)",
+        title=title,
         markers=True,
-        labels={'Week': 'Week (YYYY-MM-W)', 'Total Jumlah Penggunaan': 'Total Jumlah Penggunaan (IDR)'},
+        labels={'Period': x_label, 'Total Jumlah Penggunaan': 'Total Jumlah Penggunaan (IDR)'},
         text='Formatted Jumlah Penggunaan',
         hover_data={'Total Jumlah Penggunaan': True, 'Formatted Jumlah Penggunaan': True},
     )
-    fig.update_traces(line=dict(color='green', width=2), marker=dict(size=8), textposition='top center' )
+    fig.update_traces(
+        line=dict(color='green', width=2), 
+        marker=dict(size=8), 
+        textposition='top center'
+    )
     fig.update_layout(
-        xaxis_title="Week (YYYY-MM-W)",
+        xaxis_title=x_label,
         yaxis_title="Total Jumlah Penggunaan (IDR)",
         hovermode="x unified",
         template="plotly_white",
@@ -160,6 +188,7 @@ if 'enroll_date' in filtered_df.columns and 'price' in filtered_df.columns:
     
     # Display the chart
     st.plotly_chart(fig)
+
 
 ###### TOP 10
 # Top 10 'title' by count of unique emails (horizontal bars)
@@ -246,11 +275,25 @@ with col3:
         else:
             enrollment = pd.DataFrame(columns=['wilayah', 'enrollment'])
         
-        # Merge email_count and enrollment
-        top_wilayah = pd.merge(email_count, enrollment, on='wilayah', how='left')
+        # Calculate count of distinct users with progress 100%
+        if 'progress' in filtered_df.columns:
+            progress_100_user = (
+                filtered_df[filtered_df['progress'] == 100]
+                .groupby('wilayah')['email']
+                .nunique()
+                .reset_index()
+                .rename(columns={'email': 'progress_100%'})
+            )
+        else:
+            progress_100_user = pd.DataFrame(columns=['wilayah', 'progress_100%'])
         
-        # Fill missing values in enrollment with 0
+        # Merge email_count, enrollment, and progress_100_user
+        top_wilayah = pd.merge(email_count, enrollment, on='wilayah', how='left')
+        top_wilayah = pd.merge(top_wilayah, progress_100_user, on='wilayah', how='left')
+        
+        # Fill missing values in enrollment and progress_100_user with 0
         top_wilayah['enrollment'] = top_wilayah['enrollment'].fillna(0).astype(int)
+        top_wilayah['progress_100%'] = top_wilayah['progress_100%'].fillna(0).astype(int)
         
         # Calculate learning_adoption
         top_wilayah['learning_adoption'] = (
@@ -262,6 +305,7 @@ with col3:
         
         st.write("**Top Wilayah**")
         st.dataframe(top_wilayah)
+
 
 
 col4, col5 = st.columns(2)
@@ -287,36 +331,42 @@ with col4:
 with col5:
     # Top 10 users by count of titles
     if 'title' in filtered_df.columns and 'nama' in filtered_df.columns:
-        # Count title enrollment (count of titles grouped by nama)
+        # Count title enrollment (count of titles grouped by nama and wilayah)
         title_count = (
-            filtered_df.groupby('nama')['title']
+            filtered_df.groupby(['nama', 'wilayah'])['title']  # Group by nama and wilayah
             .count()
             .reset_index()
             .rename(columns={'title': 'title_count'})
         )
         
-        # Count progress when they already 100 (count rows where progress == 100 grouped by nama)
+        # Count progress when they already 100 (count rows where progress == 100 grouped by nama and wilayah)
         if 'progress' in filtered_df.columns:
             progress_100_count = (
                 filtered_df[filtered_df['progress'] == 100]
-                .groupby('nama')
+                .groupby(['nama', 'wilayah'])
                 .size()
                 .reset_index(name='progress_100%')
             )
         else:
-            progress_100_count = pd.DataFrame(columns=['nama', 'progress_100%'])
+            progress_100_count = pd.DataFrame(columns=['nama', 'wilayah', 'progress_100%'])
         
         # Merge the title_count and progress_100_count DataFrames
-        top_users = pd.merge(title_count, progress_100_count, on='nama', how='left')
+        top_users = pd.merge(title_count, progress_100_count, on=['nama', 'wilayah'], how='left')
         
-        # Fill missing values in progress_100_count with 0
+        # Fill missing values in progress_100% with 0
         top_users['progress_100%'] = top_users['progress_100%'].fillna(0).astype(int)
         
-        # Sort by progress_100_count and show top 20 users
+        # Sort by progress_100_count and show top 10 users
         top_users = top_users.sort_values(by='progress_100%', ascending=False).head(10)
         
+        # Reset index to ensure display numbering starts at 1
+        top_users.index = range(1, len(top_users) + 1)
+        
+        # Display the DataFrame with only relevant columns
         st.write("**Top 10 Users by 100% Progress**")
-        st.dataframe(top_users)
+        st.dataframe(top_users[['nama', 'wilayah', 'title_count', 'progress_100%']])
+
+
 
     
 
@@ -333,3 +383,5 @@ with col5:
 # Footer
 st.markdown("---")
 st.caption("Developed by Kognisi. © 2025.")
+
+

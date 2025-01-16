@@ -7,7 +7,6 @@ import os
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 import textwrap
-import streamlit_authenticator as stauth
 
 #####################################PAGE#################
 st.set_page_config(layout="wide")

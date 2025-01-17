@@ -10,3 +10,4 @@ datetime
 toml
 numpy
 plotly
+streamlit_authenticator

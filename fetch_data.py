@@ -59,3 +59,15 @@ def fetch_bpjs():
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
     return df
+
+@st.cache_resource(ttl=86400)
+def fetch_creds():
+    secret_info = st.secrets["sheets"]
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(secret_info, scope)
+    client = gspread.authorize(creds)
+    spreadsheet = client.open('Kognisi x BPJS')
+    sheet = spreadsheet.worksheet('creds')
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    return df

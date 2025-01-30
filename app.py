@@ -58,7 +58,13 @@ if st.session_state.get('authentication_status'):
 
     ####################################FILTER#################
     st.sidebar.write(" Use the filters below to explore the data.")
-
+    
+    voucher_filter = st.sidebar.selectbox(
+        "Filter by Voucher Type",
+        options=["All", "KOGNISIXBPJSTK", "KOGNISIXBPJSKACAB"],
+        index=0,  # Default to "All"
+    )
+    
     name_filter = st.sidebar.text_input("Search by Name")
 
     date_range = st.sidebar.date_input(
@@ -103,7 +109,8 @@ if st.session_state.get('authentication_status'):
 
     if category_filter:
         filtered_df = filtered_df[filtered_df['category_name'].isin(category_filter)]
-
+    if voucher_filter != "All":
+        filtered_df = filtered_df[filtered_df['voucher'] == voucher_filter]
     # Display Filtered Data
     st.write("#### **Filtered Data**:")
     with st.expander("View Filtered Data"):

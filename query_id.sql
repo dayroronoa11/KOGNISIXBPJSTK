@@ -12,7 +12,12 @@ SELECT
     MAX(cup.updated_at) AS updated_at,
     ROUND(AVG(cup.progress_percentage),1) AS progress,
     ROUND(SUM(cup.progress_duration),1) as duration,
-    cq.total_correct_answers
+    cq.total_correct_answers,
+    CASE WHEN
+	    cu.is_accomplished = 1 THEN 'Finished'
+	    ELSE 'In Progress' END AS 'status',
+	MAX(CASE WHEN LOWER (cc.title) LIKE '%pre%' THEN cup.score END) AS 'pre_test',
+    MAX(CASE WHEN LOWER (cc.title) LIKE '%post%' THEN cup.score END) AS 'post_test'
 FROM 
     transactions t
 LEFT JOIN 
@@ -59,4 +64,5 @@ GROUP BY
     cat.name,
     v.code, 
     c.price_normal,
-    cq.total_correct_answers;
+    cq.total_correct_answers,
+    cu.is_accomplished;

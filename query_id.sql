@@ -10,8 +10,8 @@ SELECT
     c.price_normal as price,
     MIN(cup.created_at) AS created_at, 
     MAX(cup.updated_at) AS updated_at,
-    AVG(cup.progress_percentage) AS progress,
-    SUM(cup.progress_duration) as duration,
+    ROUND(AVG(cup.progress_percentage),1) AS progress,
+    ROUND(SUM(cup.progress_duration),1) as duration,
     cq.total_correct_answers
 FROM 
     transactions t
@@ -48,7 +48,7 @@ LEFT JOIN
 WHERE 
     t.status = 'SUCCEEDED'
     AND t.invoice_id IS NOT NULL
-    AND v.code = 'KOGNISIXBPJSTK'
+    AND v.code IN ('KOGNISIXBPJSTK', 'KOGNISIXBPJSKACAB')
 GROUP BY 
     t.serial,
     t.created_at, 

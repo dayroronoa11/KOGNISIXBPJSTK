@@ -411,6 +411,16 @@ if st.session_state.get('authentication_status'):
             # Display the DataFrame with only relevant columns
             st.write("**Top 10 Users by 100% Progress**")
             st.dataframe(top_users[['nama', 'wilayah', 'title_count', 'progress_100%']])
+    # Add an expander for "All User Progress"
+    with st.expander("All User Progress"):
+        # Select the relevant columns, including 'title'
+        user_progress_df = filtered_df[['nama', 'unit_kerja',  'title', 'status', 'pre_test', 'post_test', 'voucher']]
+        
+        # Drop rows where 'title' is None or NaN
+        user_progress_df = user_progress_df.dropna(subset=['title'])
+        
+        # Display the dataframe
+        st.dataframe(user_progress_df)
 
 
 

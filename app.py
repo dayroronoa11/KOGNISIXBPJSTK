@@ -135,12 +135,12 @@ if st.session_state.get('authentication_status'):
         enrollment_percentage = (enroll_user / jumlah_user * 100) if jumlah_user > 0 else 0
         st.metric("Enrollment (%)", f"{enrollment_percentage:.2f}%")
 
-    # Column 6: Sum of 'price' as 'Jumlah Penggunaan'
+    # Column 6: Sum of 'price' as 'Jumlah Penggunaan' (use unfiltered df_combined)
     with col6:
-        jumlah_penggunaan = filtered_df['price'].sum() if 'price' in filtered_df.columns else 0
+        jumlah_penggunaan = df_combined['price'].sum() if 'price' in df_combined.columns else 0
         st.metric("Jumlah Penggunaan", f"Rp {jumlah_penggunaan:,.0f}")
 
-    # Column 7: Remaining balance as 'Sisa Saldo'
+    # Column 7: Remaining balance as 'Sisa Saldo' (calculate from unfiltered data)
     with col7:
         initial_balance = 94572100
         sisa_saldo = initial_balance - jumlah_penggunaan

@@ -5,7 +5,7 @@ pymysql
 sshtunnel
 gspread
 oauth2client
-paramiko
+paramiko<3.0
 datetime
 toml
 numpy

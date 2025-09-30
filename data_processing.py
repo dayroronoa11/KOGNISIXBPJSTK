@@ -35,8 +35,19 @@ def fetch_combined():
 
 def finalize_data():
     df_combined, df_creds = fetch_combined()
+
     if df_combined is not None:
+        # ==== khusus filter untuk title "SENI MENEMUKAN MAKNA HIDUP" ====
+        mask = df_combined['title'] == 'SENI MENEMUKAN MAKNA HIDUP'
+        
+        # untuk title tsb, hanya ambil row yg ada kata pre/post di cc.title
+        df_combined = pd.concat([
+            df_combined[~mask],  # semua data selain "SENI MENEMUKAN MAKNA HIDUP"
+            df_combined[mask & df_combined['cc.title'].str.lower().str.contains('pre|post', na=False)]  # khusus pre/post
+        ])
+
         return df_combined, df_creds
     else:
         st.error("Failed to fetch combined data due to missing columns.")
         return pd.DataFrame(), pd.DataFrame()
+

@@ -426,6 +426,8 @@ if st.session_state.get('authentication_status'):
 
         
 
+    st.write("Row count in filtered_df:", len(filtered_df))
+    st.write("Row count in user_progress_df:", len(user_progress_df))
 
 
 

@@ -21,8 +21,8 @@ def fetch_combined():
     df_bpjs['email'] = df_bpjs['email'].str.strip().str.lower()
 
     # Remove duplicate emails in each dataset
-    df_id = df_id.drop_duplicates(subset='email')
-    df_bpjs = df_bpjs.drop_duplicates(subset='email')
+    #df_id = df_id.drop_duplicates(subset='email')
+    #df_bpjs = df_bpjs.drop_duplicates(subset='email')
 
     # Filter out emails ending with '@growthcenter.id'
     df_id = df_id[~df_id['email'].str.endswith('@growthcenter.id', na=False)]

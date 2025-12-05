@@ -414,7 +414,7 @@ if st.session_state.get('authentication_status'):
     # Add an expander for "All User Progress"
     with st.expander("All User Progress"):
         # Select the relevant columns, including 'title'
-        user_progress_df = filtered_df[['nama','email', 'unit_kerja',  'title','updated_at', 'status']]
+        user_progress_df = filtered_df[['nama','email', 'unit_kerja',  'title','updated_at', 'status', 'enroll_date', 'voucher']]
         
         # Drop rows where 'title' is None or NaN
         user_progress_df = user_progress_df.dropna(subset=['title'])
